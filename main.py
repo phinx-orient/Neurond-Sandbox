@@ -120,18 +120,18 @@ async def close_session(session_id: str):
 
 @app.post("/copy_from_runtime/{session_id}/", response_model=schema.SessionResponse)
 async def copy_from_runtime(session_id: str, request: schema.CopyFromRuntimeRequest):
-    logger.info(f"Copying from runtime in session: {session_id} from {request.src_runtime_path} to {request.dest_local_path}")
+    logger.info(f"Copying from runtime in session: {session_id} from {request.src_runtime_file} to {request.dest_local_file}")
     session = active_sessions.get(session_id)
     if not session:
         logger.error("Session not found.")
         raise HTTPException(status_code=404, detail="Session not found.")
 
     try:
-        src_path = f"./app/{request.src_runtime_path}"
-        dest_path = f"{request.dest_local_path}"
+        src_path = f"./app/{request.src_runtime_file}"
+        dest_path = f"{request.dest_local_file}"
         session.copy_from_runtime(src_path, dest_path)
         logger.info("File copied successfully.")
-        return {"output": f"File copied from {request.src_runtime_path} to {request.dest_local_path} successfully."}  # Updated response
+        return {"output": f"File copied from {request.src_runtime_file} to {request.dest_local_file} successfully."}  # Updated response
     except RuntimeError as e:
         logger.error(f"Runtime error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -155,7 +155,7 @@ async def copy_to_runtime(session_id: str, src: UploadFile = File(...), request:
         # Save the uploaded file to a temporary location
         with open(temp_file_path, "wb") as buffer:
             buffer.write(await src.read())
-        dest_path = f"/{request.dest}/{src.filename}"
+        dest_path = f"/{request.dest_runtime_path}/{src.filename}"
         session.copy_to_runtime(temp_file_path, dest_path)
         logger.info("File copied to runtime successfully.")
         return {"output": f"File copied to runtime at {request.dest_runtime_path} successfully."}  # Updated response

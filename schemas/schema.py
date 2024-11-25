@@ -21,8 +21,8 @@ class SessionResponse(BaseModel):
     output: str
 
 class CopyFromRuntimeRequest(BaseModel):
-    src_runtime_path: str = Field(..., description="Source path in the runtime to copy from")
-    dest_local_path: str = Field(..., description="Local path to save the copied file")
+    src_runtime_file: str = Field(..., description="Source file in the runtime to copy from")
+    dest_local_file: str = Field(..., description="Local file to save the copied file")
 
 class CopyToRuntimeRequest(BaseModel):
-        dest_runtime_path: str = Field(default="./app", description="Destination path in the runtime")
+    dest_runtime_path: str = Field(default="./app", description="Destination path in the runtime")
