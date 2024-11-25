@@ -2,14 +2,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from llm_sandbox.docker import SandboxDockerSession
+from llm_sandbox.const import SupportedLanguage
 from typing import List, Optional, Dict
 from fastapi import UploadFile, File
 import os
 import logging
 from enum import Enum
 import json
-
-
+import uuid
+from schemas import schema
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,49 +32,21 @@ app.add_middleware(
 active_sessions: Dict[str, SandboxDockerSession] = {}
 
 
-with open("./config.json", "r") as file:
-    config = json.load(file)
-SANDBOX_DOCKERFILE = config.get("SANDBOX_DOCKERFILE")
-
-
-class Language(str, Enum):
-    PYTHON = "python"
-    JAVA = "java"
-    JAVASCRIPT = "javascript"
-    CPP = "cpp"
-    GO = "go"
-    RUBY = "ruby"
-
-
-class CodeExecutionRequest(BaseModel):
-    lang: str
-    code: str
-    libraries: Optional[List[str]] = None
-
-
-class SessionResponse(BaseModel):
-    output: str
-
-
 @app.post("/create_session/")
-async def create_session(
-    session_id: str,
-    lang: Language,  # Changed to use SupportedLanguage enum
-    image: Optional[str] = None,
-    dockerfile: Optional[str] = SANDBOX_DOCKERFILE,
-    keep_template: bool = True,
-):
-    logger.info(f"Creating session: {session_id} with language: {lang}")
+async def create_session(request: schema.CreateSessionRequest):
+    session_id = str(uuid.uuid4())  # Generate a random UUID for the session ID
+    logger.info(f"Creating session: {session_id} with language: {request.lang}")
+
     if session_id in active_sessions:
         logger.error("Session ID already exists.")
         raise HTTPException(status_code=400, detail="Session ID already exists.")
 
     try:
         session = SandboxDockerSession(
-            lang=lang,
-            image=image,
-            dockerfile=dockerfile,
-            keep_template=keep_template,
+            lang=request.lang,
+            image=request.image,
+            dockerfile=request.dockerfile,
+            keep_template=request.keep_template,
         )
         session.open()
         active_sessions[session_id] = session
@@ -108,8 +81,8 @@ async def get_session_metadata(session_id: str):
     return {"session_id": session_id, "metadata": metadata}
 
 
-@app.post("/run_code/{session_id}/", response_model=SessionResponse)
-async def run_code(session_id: str, request: CodeExecutionRequest):
+@app.post("/run_code/{session_id}/", response_model=schema.SessionResponse)
+async def run_code(session_id: str, request: schema.CodeExecutionRequest):
     logger.info(f"Running code in session: {session_id}")
     session = active_sessions.get(session_id)
     if not session:
@@ -119,7 +92,7 @@ async def run_code(session_id: str, request: CodeExecutionRequest):
     try:
         output = session.run(request.code, libraries=request.libraries)
         logger.info("Code executed successfully.")
-        return SessionResponse(output=output.text)
+        return schema.SessionResponse(output=output.text)
     except RuntimeError as e:
         logger.error(f"Runtime error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
