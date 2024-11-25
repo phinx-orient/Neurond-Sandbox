@@ -8,15 +8,21 @@ SANDBOX_DOCKERFILE = config.get("SANDBOX_DOCKERFILE", "./default_dockerfile")
 
 class CreateSessionRequest(BaseModel):
     lang: str = Field(..., description="The programming language for the session")
-    image: Optional[str] = Field(None, description="Optional Docker image")
-    dockerfile: Optional[str] = Field(SANDBOX_DOCKERFILE, description="Dockerfile to use")
+    image: str = Field(default="", description="Docker image to use")  # Default value for image, now required
+    dockerfile: str = Field(default=SANDBOX_DOCKERFILE, description="Dockerfile to use")  # Default value for dockerfile, now required
     keep_template: bool = Field(True, description="Whether to keep the template")
 
 class CodeExecutionRequest(BaseModel):
-    lang: str
     code: str
-    libraries: Optional[List[str]] = None
+    libraries: List[str] = Field(default="", description="library to pip install") 
 
 
 class SessionResponse(BaseModel):
     output: str
+
+class CopyFromRuntimeRequest(BaseModel):
+    src_runtime_path: str = Field(..., description="Source path in the runtime to copy from")
+    dest_local_path: str = Field(..., description="Local path to save the copied file")
+
+class CopyToRuntimeRequest(BaseModel):
+        dest_runtime_path: str = Field(default="./app", description="Destination path in the runtime")
