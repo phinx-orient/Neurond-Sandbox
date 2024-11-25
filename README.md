@@ -22,7 +22,7 @@ Neurond Sandbox is a flexible and powerful environment for executing code in iso
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/neurond-sandbox.git
+   git clone https://github.com/phinx-orient/neurond-sandbox.git
    cd neurond-sandbox
    ```
 
@@ -39,9 +39,14 @@ Neurond Sandbox is a flexible and powerful environment for executing code in iso
        "SANDBOX_DOCKERFILE": "path/to/your/Dockerfile"
    }
    ```
+The `SANDBOX_DOCKERFILE` folder contains the Dockerfile for the sandbox environment. You can pre-install essential packages, such as NumPy and Pandas, within this Dockerfile. This way, you won't need to install them again the first time you run the sandbox.
 
 ## Usage
 
 ### Starting the Server
 
-Run the FastAPI application using Uvicorn:
+To start the server using Docker Compose, create a `docker-compose.yml` file in the root directory with the following content:
+```bash
+docker compose up --build 
+```
+
