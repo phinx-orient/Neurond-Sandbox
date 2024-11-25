@@ -33,7 +33,6 @@ active_sessions: Dict[str, SandboxDockerSession] = {}
 
 with open("./config.json", "r") as file:
     config = json.load(file)
-    print(config)
 SANDBOX_DOCKERFILE = config.get("SANDBOX_DOCKERFILE")
 
 
