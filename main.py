@@ -20,9 +20,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*"
-    ],  # Allows all origins, you can specify a list of allowed origins
+    allow_origins=["*"],  # Allows all origins, you can specify a list of allowed origins
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allows all headers
@@ -120,7 +118,7 @@ async def close_session(session_id: str):
 
 @app.post("/copy_from_runtime/{session_id}/", response_model=schema.SessionResponse)
 async def copy_from_runtime(session_id: str, request: schema.CopyFromRuntimeRequest):
-    logger.info(f"Copying from runtime in session: {session_id} from {request.src_runtime_file} to {request.dest_local_file}")
+    logger.info(f"Copying from runtime in session: {session_id} from {request.src_runtime_file} to {request.dest_local_path}")
     session = active_sessions.get(session_id)
     if not session:
         logger.error("Session not found.")
@@ -128,16 +126,19 @@ async def copy_from_runtime(session_id: str, request: schema.CopyFromRuntimeRequ
 
     try:
         src_path = f"./app/{request.src_runtime_file}"
-        dest_path = f"{request.dest_local_file}"
+        dest_path = request.dest_local_path.rstrip('/') + '/' if request.dest_local_path else './mnt/'
         session.copy_from_runtime(src_path, dest_path)
         logger.info("File copied successfully.")
-        return {"output": f"File copied from {request.src_runtime_file} to {request.dest_local_file} successfully."}  # Updated response
+        return {"output": f"File copied from {request.src_runtime_file} to {request.dest_local_path} successfully."}  # Updated response
     except RuntimeError as e:
         logger.error(f"Runtime error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except FileNotFoundError as e:
         logger.error(f"File not found: {str(e)}")
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=f"File {request.src_runtime_file} not found in the runtime.")
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Could not find the file {request.src_runtime_file} in the container.")
 
 
 @app.post("/copy_to_runtime/{session_id}/", response_model=schema.SessionResponse)
@@ -168,25 +169,3 @@ async def copy_to_runtime(session_id: str, src: UploadFile = File(...), request:
             os.remove(temp_file_path)
             logger.info(f"Temporary file {temp_file_path} removed.")
 
-
-@app.post("/add_mount/{session_id}/")
-async def add_mount(session_id: str, source: str, target: str, type: str = "bind"):
-    logger.info(f"Adding mount in session: {session_id} from {source} to {target}")
-    session = active_sessions.get(session_id)
-    if not session:
-        logger.error("Session not found.")
-        raise HTTPException(status_code=404, detail="Session not found.")
-
-    try:
-        session.add_mount(source, target, type)
-        logger.info("Mount added successfully.")
-        return {"message": "Mount added successfully."}
-    except ValueError as e:
-        logger.error(f"Value error: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

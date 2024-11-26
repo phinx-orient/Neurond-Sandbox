@@ -21,6 +21,11 @@ from llm_sandbox.const import (
     DefaultImage,
     NotSupportedLibraryInstallation,
 )
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class SandboxDockerSession(Session):
@@ -282,17 +287,4 @@ class SandboxDockerSession(Session):
 
         return ConsoleOutput(output)
     
-    def add_mount(self, source: str, target: str, type: str = 'bind'):
-        """
-        Add a mount to the Docker container.
-        :param source: The source directory on the host.
-        :param target: The target directory in the container.
-        :param type: The type of mount (default is 'bind').
-        """
-        if not os.path.isdir(source):
-            raise ValueError(f"Source directory {source} does not exist or is not a directory.")
-        
-        mount = Mount(target=target, source=source, type=type)
-        if not self.mounts:
-            self.mounts = []  # Initialize mounts if not already done
-        self.mounts.append(mount)  # Add the new mount to the list
+
