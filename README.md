@@ -50,3 +50,6 @@ To start the server using Docker Compose, create a `docker-compose.yml` file in 
 docker compose up --build 
 ```
 
+## Source
+Clone and customize from https://github.com/vndee/llm-sandbox
+
